@@ -3139,10 +3139,22 @@ function update_user_login_times() {
  * @return bool
  */
 function user_not_fully_set_up($user) {
+    global $CFG;
     if (isguestuser($user)) {
         return false;
     }
-    return (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user));
+    if (empty($user->firstname) or empty($user->lastname) or empty($user->email) or over_bounce_threshold($user)) {
+        return true;
+    }
+    require_once ("$CFG->dirroot/user/profile/lib.php");
+    $profilefields = profile_get_custom_fields();
+    foreach ($profilefields as $pf) {
+        $field = new profile_field_base($pf->id, $user->id);
+        if ($field->is_required() and $field->is_visible() and (!$field->is_locked()) and $field->is_empty()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
